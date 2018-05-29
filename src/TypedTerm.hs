@@ -36,7 +36,8 @@ substTyTyLoc IntType i tyloc = IntType
 substTyTyLoc (VarType j) i tyloc = VarType j
 substTyTyLoc ty@(FunType argty (LocType loc) retty) i tyloc = ty
 substTyTyLoc ty@(FunType argty (LocVarType j) retty) i tyloc =
-  FunType argty tyloc retty
+  if i == j then FunType argty tyloc retty
+  else ty
 
 substTyLoc :: TypedLocation -> Int -> TypedLocation -> TypedLocation 
 substTyLoc tyloc@(LocVarType i) j jtyloc = 
@@ -50,9 +51,9 @@ prTyTerm (Lam Client x ty n) =
 prTyTerm (Lam Server x ty n) = 
     "lam^s (" ++ x ++ ":" ++ prTy ty ++ "). " ++ prTyTerm n
 prTyTerm (App tyloc l n) = 
-    "(" ++ prTyTerm l ++ ") "++ 
+    "(" ++ prTyTerm l ++ ")^"++ 
     prTyLoc tyloc ++
-    " (" ++ prTyTerm n ++ ")"
+    "^(" ++ prTyTerm n ++ ")"
 prTyTerm (Const i) = show i
 
 prTy :: Type -> String

@@ -1,4 +1,4 @@
-module Infer where
+module Infer(infer) where
 
 import Term as T
 import TypedTerm as TT
@@ -6,32 +6,20 @@ import TypedTerm as TT
 infer :: Term -> TypedTerm
 infer m = tym1
     where (tym, ty, equs, _) = genCst 1 m []
-          equs1 = resolve equs
+          equs1 = solve equs
           tym1 = substTerm tym equs1 
 
 inferRun :: Term -> IO ()
 inferRun m = do 
     let (tym, ty, equs, _) = genCst 1 m []
-    let (equs0, changed0) = stepOverEqus equs 
-    let (equs1, changed1) = mergeAll equs0
-    let (equs2, changed2) = stepOverEqus equs1 
-    let (equs3, changed3) = mergeAll equs2
-    let (equs4, changed4) = stepOverEqus equs3 
-    let (equs5, changed5) = mergeAll equs4
-    let (equs6, changed6) = stepOverEqus equs5 
-    let (equs7, changed7) = mergeAll equs6
-    
---    let equs1 = resolve equs
-    -- let tym1 = substTerm tym equs1
+    let equs1 = solve equs
+    let tym1 = substTerm tym equs1
     putStrLn (prTyTerm tym)
-    mapM_ putStrLn (prEqus equs0)
+    mapM_ putStrLn (prEqus equs)
     putStrLn ""
+    putStrLn (prTyTerm tym1)
     mapM_ putStrLn (prEqus equs1)
-    putStrLn ""
-    mapM_ putStrLn (prEqus equs2)
-    putStrLn ""
-    mapM_ putStrLn (prEqus equs3)
-  -- putStrLn (prTyTerm tym1)
+  
   --
 data Equ = 
       EquTy TT.Type TT.Type 
@@ -77,12 +65,52 @@ substLocEqus tyloc (EquLoc (LocVarType i) ityloc:equs) =
     substLocEqus (substTyLoc tyloc i ityloc) equs 
 
 --
-resolve equs =
+solve equs =
     let (equs1, changed1) = stepOverEqus equs in
     let (equs2, changed2) = mergeAll equs1 in
-    if changed1 || changed2 then resolve equs2
+    let (equs3, changed3) = propagate equs2 in 
+    if changed1 || changed2 || changed3 then solve equs3
     else equs
 
+--
+propagate :: Equations -> (Equations, Bool)
+propagate equs = propagate' equs equs
+
+propagate' :: Equations -> Equations -> (Equations, Bool)
+propagate' [] allequs = (allequs, False)
+propagate' (EquTy (VarType i) ty:equs) allequs =
+    let (allequs1, changed1) = propagateTy i ty allequs 
+        (allequs2, changed2) = propagate' equs allequs1
+    in  (allequs2, changed1 || changed2) 
+propagate' (EquLoc (LocVarType i) locty:equs) allequs =
+    let (allequs1, changed1) = propagateLoc i locty allequs 
+        (allequs2, changed2) = propagate' equs allequs1
+    in  (allequs2, changed1 || changed1)
+propagate' (_:equs) allequs = 
+    error ("Error in propagate': Not VarType nor LocVarType.")
+
+propagateTy :: Int -> Type -> Equations -> (Equations, Bool)
+propagateTy i ity [] = ([], False)
+propagateTy i ity (EquTy varty ty:equs) = 
+    let ty1 = subst ty i ity
+        (equs1, changed1) = propagateTy i ity equs 
+    in (EquTy varty ty1:equs1, ty1/=ty || changed1)
+propagateTy i ity (EquLoc locvarty tyloc:equs) = 
+    let (equs1, changed1) = propagateTy i ity equs 
+    in (EquLoc locvarty tyloc:equs1, changed1)
+    
+
+propagateLoc :: Int -> TypedLocation -> Equations -> (Equations, Bool)
+propagateLoc i ilocty [] = ([], False)
+propagateLoc i ilocty (EquTy varty ty:equs) =
+    let (equs1, changed1) = propagateLoc i ilocty equs
+    in  (EquTy varty ty: equs1, changed1)
+propagateLoc i ilocty (EquLoc locvarty tyloc:equs) =
+    let tyloc1 = substTyLoc tyloc i ilocty 
+        (equs1, changed1) = propagateLoc i ilocty equs 
+    in  (EquLoc locvarty tyloc1:equs1, tyloc/=tyloc1 || changed1) 
+
+mergeAll :: Equations -> (Equations, Bool)
 mergeAll [] = ([], False)
 mergeAll (equ:equs) = 
     let (equs1, therestequs1, changed1) = mergeTheRest equ equs 
