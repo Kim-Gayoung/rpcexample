@@ -30,8 +30,8 @@ subst (Const i) y w = Const i
 
 prTerm :: Term -> String
 prTerm (Var x) = x
-prTerm (Lam Client x n) = "lam^c " ++ x ++ " " ++ prTerm n
-prTerm (Lam Server x n) = "lam^s " ++ x ++ " " ++ prTerm n
+prTerm (Lam Client x n) = "lam^c " ++ x ++ ". " ++ prTerm n
+prTerm (Lam Server x n) = "lam^s " ++ x ++ ". " ++ prTerm n
 prTerm (App l n) = "(" ++ prTerm l ++ ") "++ "(" ++ prTerm n ++ ")"
 prTerm (Const i) = show i
 

@@ -1,7 +1,7 @@
 module Term where
 
 -- a,b :: client | server
-data Location = Client | Server deriving Show
+data Location = Client | Server deriving (Show, Eq)
 
 
 -- L,M,N :: = V | L M
