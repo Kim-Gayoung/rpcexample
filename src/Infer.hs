@@ -1,4 +1,4 @@
-module Infer(infer) where
+module Infer(infer, inferRun) where
 
 import Term as T
 import TypedTerm as TT
@@ -54,8 +54,8 @@ substTerm (TT.App tyloc m1 m2) equs =
 substTyEqus ty [] = ty
 substTyEqus ty ((EquTy (VarType i) ity):equs) =
     substTyEqus (subst ty i ity) equs 
-substTyEqus ty ((EquLoc _ _):equs) =
-    substTyEqus ty equs 
+substTyEqus ty ((EquLoc (LocVarType i) ilocty):equs) =
+    substTyEqus (substTyTyLoc ty i ilocty) equs 
 
 substLocEqus :: TypedLocation -> Equations -> TypedLocation
 substLocEqus tyloc [] = tyloc 
@@ -66,7 +66,7 @@ substLocEqus tyloc (EquLoc (LocVarType i) ityloc:equs) =
 
 --
 solve equs =
-    let (equs1, changed1) = stepOverEqus equs in
+    let (equs1, changed1) = unifyEqus equs in
     let (equs2, changed2) = mergeAll equs1 in
     let (equs3, changed3) = propagate equs2 in 
     if changed1 || changed2 || changed3 then solve equs3
@@ -121,56 +121,56 @@ mergeTheRest equbase [] = ([], [], False)
 mergeTheRest equbase@(EquTy ty11 ty12) ((equ@(EquTy ty21 ty22)):equs) =
     let (equs2, therestequs2, changed2) = mergeTheRest equbase equs in
     if ty11 == ty21 then
-        let (equs1, changed1) = step (EquTy ty12 ty22) in
+        let (equs1, changed1) = unify (EquTy ty12 ty22) in
             (equs1 ++ equs2, therestequs2, changed1 || changed2) 
     else (equs2, equ:therestequs2, changed2)
 mergeTheRest equbase@(EquLoc tyloc11 tyloc12) ((equ@(EquLoc tyloc21 tyloc22)):equs) =
     let (equs2,therestequs2,changed2) = mergeTheRest equbase equs in
     if tyloc11 == tyloc21 then
-        let (equs1, changed1) = step (EquLoc tyloc12 tyloc22) in 
+        let (equs1, changed1) = unify (EquLoc tyloc12 tyloc22) in 
             (equs1 ++ equs2, therestequs2, changed1 || changed2) 
     else (equs2, equ:therestequs2, changed2)
 mergeTheRest equbase (equ:equs) = 
     let (equs1, therestequs1, changed) = mergeTheRest equbase equs in
         (equs1, equ:therestequs1, changed)
 
-stepOverEqus :: Equations -> (Equations, Bool)
-stepOverEqus [] = ([], False)
-stepOverEqus (equ:equs) =
-    let (equ1,changed1) = step equ 
-        (equs2, changed2) = stepOverEqus equs 
+unifyEqus :: Equations -> (Equations, Bool)
+unifyEqus [] = ([], False)
+unifyEqus (equ:equs) =
+    let (equ1,changed1) = unify equ 
+        (equs2, changed2) = unifyEqus equs 
     in  (equ1 ++ equs2, changed1 || changed2)
 
-step :: Equ-> (Equations, Bool)
-step (EquTy ty1 ty2) = step' ty1 ty2 
-step (EquLoc tyloc1 tyloc2) = stepLoc' tyloc1 tyloc2 
+unify :: Equ-> (Equations, Bool)
+unify (EquTy ty1 ty2) = unify' ty1 ty2 
+unify (EquLoc tyloc1 tyloc2) = unifyLoc' tyloc1 tyloc2 
 
-step' :: Type -> Type -> (Equations, Bool)
-step' IntType IntType = ([], False)
-step' ty1@IntType ty2@(VarType i) = ([EquTy ty2 ty1], True)
-step' ty1@IntType ty2@(FunType _ _ _ ) = stepTyError ty1 ty2
-step' ty1@(VarType i) ty2 = ([EquTy ty1 ty2], False)
-step' ty1@(FunType _ _ _) ty2@IntType = stepTyError ty1 ty2
-step' (FunType argty1 tyloc1 retty1) (FunType argty2 tyloc2 retty2) =
-    let (argequ, argequchanged) = step' argty1 argty2 
-        (locequ, locequchanged) = stepLoc' tyloc1 tyloc2 
-        (retequ, retequchanged) = step' retty1 retty2 
+unify' :: Type -> Type -> (Equations, Bool)
+unify' IntType IntType = ([], False)
+unify' ty1@IntType ty2@(VarType i) = ([EquTy ty2 ty1], True)
+unify' ty1@IntType ty2@(FunType _ _ _ ) = unifyTyError ty1 ty2
+unify' ty1@(VarType i) ty2 = ([EquTy ty1 ty2], False)
+unify' ty1@(FunType _ _ _) ty2@IntType = unifyTyError ty1 ty2
+unify' (FunType argty1 tyloc1 retty1) (FunType argty2 tyloc2 retty2) =
+    let (argequ, argequchanged) = unify' argty1 argty2 
+        (locequ, locequchanged) = unifyLoc' tyloc1 tyloc2 
+        (retequ, retequchanged) = unify' retty1 retty2 
     in  (argequ ++ locequ ++ retequ, 
             argequchanged || locequchanged || retequchanged)
-step' ty1@(FunType argty tyloc retty) ty2@(VarType i) = ([EquTy ty2 ty1], True)
+unify' ty1@(FunType argty tyloc retty) ty2@(VarType i) = ([EquTy ty2 ty1], True)
 
-stepLoc' :: TypedLocation -> TypedLocation -> (Equations, Bool) 
-stepLoc' tyloc1@(LocVarType i) tyloc2 = ([EquLoc tyloc1 tyloc2], False)
-stepLoc' tyloc1@(LocType loc) tyloc2@(LocVarType i) = 
+unifyLoc' :: TypedLocation -> TypedLocation -> (Equations, Bool) 
+unifyLoc' tyloc1@(LocVarType i) tyloc2 = ([EquLoc tyloc1 tyloc2], False)
+unifyLoc' tyloc1@(LocType loc) tyloc2@(LocVarType i) = 
     ([EquLoc tyloc2 tyloc1], True)
-stepLoc' tyloc1@(LocType loc1) tyloc2@(LocType loc2) = 
+unifyLoc' tyloc1@(LocType loc1) tyloc2@(LocType loc2) = 
     if loc1 == loc2 then ([], True)
-    else stepLocError loc1 loc2
+    else unifyLocError loc1 loc2
 
-stepTyError ty1 ty2 = 
+unifyTyError ty1 ty2 = 
     error (show ty1 ++ " not compatible with " ++ show ty2)
 
-stepLocError loc1 loc2 =
+unifyLocError loc1 loc2 =
     error (show loc1 ++ " not compatible with " ++ show loc2)
 --
 
