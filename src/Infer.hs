@@ -1,5 +1,68 @@
 module Infer(infer, inferRun) where
 
+{-
+
+(lam^s f. f 1) (lam^c x. x)를 타입 유추 알고리즘(infer)를 적용하면
+(lam^s f: int-c->int. f ^c 1) (lam^c x: int. x)를 만든다. 
+
+기본 아이디어: 
+
+ 1) 타입 유추 알고리즘은 다음과 같은 과정으로 되어 있다. 
+
+     genCst -> solve를 반복
+     solve = unify -> merge -> propagate
+
+ 2) genCst 과정 예 
+
+    - 주어진 term의 구조를 따라가면서 타입 제약 조건을
+      표현한 등식들을 생성 
+    - 타입 변수를 사용하여 typed term의 뼈대를 만들어 놓음
+
+     (lam^s f: a1. f ^l5 1) ^s (lam^c x: int. x)
+
+    {f: a1}  int -l3-> a2 = a1
+    {x: a4}  a4 -c-> a4 = a1
+             l5 = l3
+    
+ 3) unify 과정 예  
+
+    - 각 등식의 왼쪽은 모두 타입 변수가 되도록 변환
+
+    a1 = int -l3-> a2
+    a1 = a4 -c-> a4 = 
+    l5 = l3 
+
+ 4) merge 과정 
+
+    - 왼쪽 변수가 같은 등식을 찾아 오른쪽끼리 unify함. 
+    - 왼쪽 변수가 같은 등식들 중 하나만 남기고 제거 
+
+    a1 = int -l3-> a2
+    l5=l3
+    a4 = int
+    a2 = a4
+    l3 = c
+
+ 5) propagate 과정 
+
+    - 각 등식의 왼편 타입 변수가 다른 등식의 오른편에 
+       나타나면 왼편 타입 변수와 짝이되는 오른편으로 대체 
+    
+    a1 = int -c-> int
+    l5 = c
+    a4 = int 
+    a2 = int
+    l3 = c
+
+이 예제의 경우 더이상 반복할 필요는 없지만 
+일반적으로는 3)~5) 과정동안 새로 만든 등식으로 인해
+반복해야하는 경우가 발생한다. 
+
+6) substTerm으로 solve한 등식을 genCst 단계에서 만든
+    뼈대만 있는 typed term에 대체해서 완전한 typed term을
+    완성한다. 
+-}    
+
 import Term as T
 import TypedTerm as TT
 
