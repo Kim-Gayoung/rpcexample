@@ -12,7 +12,14 @@ type Value = Term     -- Var or Lam
 
 prTerm :: Term -> String
 prTerm (Var x) = x
-prTerm (Lam Client x n) = "lam^c " ++ x ++ ". " ++ prTerm n
-prTerm (Lam Server x n) = "lam^s " ++ x ++ ". " ++ prTerm n
+prTerm (Lam loc x n) = "lam^" ++ locToStr loc ++  " " ++ x ++ ". " ++ prTerm n
 prTerm (App l n) = "(" ++ prTerm l ++ ") "++ "(" ++ prTerm n ++ ")"
 prTerm (Const i) = show i
+
+locToStr Client = "c"
+locToStr Server = "s"
+
+seqToStr [] = ""
+seqToStr [x] = x
+seqToStr (x:xs) = x ++ "," ++ seqToStr xs
+
