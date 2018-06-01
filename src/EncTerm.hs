@@ -12,9 +12,10 @@ data EncTerm =
     | Lam Location [String] EncTerm 
     | Call EncValue  [EncValue]
     | Req EncValue [EncValue]
+    | App EncValue [EncValue]
     | Let String EncTerm EncTerm 
-    | LetApp String EncValue [EncValue] EncTerm 
-    | LetReq String EncValue [EncValue] EncTerm 
+    -- | LetApp String EncValue [EncValue] EncTerm 
+    -- | LetReq String EncValue [EncValue] EncTerm 
 
 --
 subst :: EncTerm -> String -> EncValue -> EncTerm 
@@ -22,16 +23,12 @@ subst m@(Const i) x v = m
 subst m@(Var y) x v = 
     if x == y then v else m
 subst m@(Call f ws) x v = Call (subst f x v) (map (\w -> subst w x v) ws)
+subst m@(App f ws) x v = App (subst f x v) (map (\w -> subst w x v) ws) 
 subst m@(Req f ws) x v = Req (subst f x v) (map (\w -> subst w x v) ws)
 subst m@(Let y m1 m2) x v = 
     Let y (subst m1 x v) 
         (if x == y then m2 else subst m2 x v)
-subst m@(LetApp y f ws m1) x v = 
-    LetApp y (subst f x v) (map (\w -> subst w x v) ws) 
-        (if x == y then m1 else subst m1 x v)
-subst m@(LetReq y f ws m1) x v = 
-    LetReq y (subst f x v) (map (\w -> subst w x v) ws) 
-        (if x == y then m1 else subst m1 x v)
+
 
 
 substs :: EncTerm -> [String] -> [EncValue] -> EncTerm 
