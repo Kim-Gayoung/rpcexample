@@ -254,11 +254,11 @@ genCst n (T.App m1 m2) tyenv = (TT.App locvar tym1 tym2, retty, equ, n2+2)
           retty = VarType (n2+1)
           equ = equ1 ++ equ2 ++ [EquTy ty1 (FunType ty2 locvar retty)]
 
-genCst n (T.Lam loc x m) tyenv = (TT.Lam loc x argty tym, funty, equ1, n1+1)
-    where argty = VarType n1
+genCst n (T.Lam loc x m) tyenv = (TT.Lam loc x argty tym, funty, equ1, n1)
+    where argty = VarType n
           tyenv1 = (x,argty) : tyenv
           funty = FunType argty (LocType loc) bodyty
-          (tym, bodyty, equ1, n1) = genCst n m tyenv1
+          (tym, bodyty, equ1, n1) = genCst (n+1) m tyenv1
 
 
 tylookup :: String -> TyEnv -> Type
