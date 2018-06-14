@@ -148,7 +148,7 @@ propagate' (EquTy (VarType i) ty:equs) allequs =
 propagate' (EquLoc (LocVarType i) locty:equs) allequs =
     let (allequs1, changed1) = propagateLoc i locty allequs 
         (allequs2, changed2) = propagate' equs allequs1
-    in  (allequs2, changed1 || changed1)
+    in  (allequs2, changed1 || changed2)
 propagate' (_:equs) allequs = 
     error ("Error in propagate': Not VarType nor LocVarType.")
 
