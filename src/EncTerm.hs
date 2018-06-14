@@ -1,4 +1,4 @@
-module EncTerm(EncTerm(..), EncValue, subst, substs) where
+module EncTerm(EncTerm(..), EncValue, subst, substs, prTerm) where
 
 
 import Term(Location(..),locToStr,seqToStr)
@@ -20,8 +20,12 @@ data EncTerm =
 --
 subst :: EncTerm -> String -> EncValue -> EncTerm 
 subst m@(Const i) x v = m
-subst m@(Var y) x v = 
-    if x == y then v else m
+subst m@(Var y) x v = if x == y then v else m
+subst m@(Lam loc xs mbody) x v = 
+    let isin [] = False
+        isin (y:ys) = x==y || isin ys 
+    in  if isin xs then Lam loc xs mbody
+        else Lam loc xs (subst mbody x v) 
 subst m@(Call f ws) x v = Call (subst f x v) (map (\w -> subst w x v) ws)
 subst m@(App f ws) x v = App (subst f x v) (map (\w -> subst w x v) ws) 
 subst m@(Req f ws) x v = Req (subst f x v) (map (\w -> subst w x v) ws)
@@ -47,6 +51,6 @@ prTerm (Call f ws) =
 prTerm (Req f ws) = 
     "Req(" ++ prTerm f ++ ") (" ++ seqToStr (map prTerm ws) ++ ")"
 prTerm (Let x m1 m2) = 
-    "let " ++ x ++ " " ++ prTerm m1 ++ " in " ++ prTerm m2 
+    "let " ++ x ++ " = " ++ prTerm m1 ++ " in " ++ prTerm m2 
 
 

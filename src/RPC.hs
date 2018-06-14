@@ -2,8 +2,6 @@ module RPC where
 
 import Term 
 
-run = putStrLn $ prTerm $ eval ex1 Client
-
 -- The RPC calculus
 -- Syntax
 
@@ -28,16 +26,6 @@ subst (Lam b x m) y w =
 subst (App l n) y w = App (subst l y w) (subst n y w)
 subst (Const i) y w = Const i
 
-
-
---
-ex1Left = Lam Server "f" 
-        (App (Lam Server "x" (Var "x")) 
-            (App (Var "f") (Const 1)))
-ex1Right = Lam Client "y"
-        (App (Lam Server "z" (Var "z")) (Var "y"))
-
-ex1 = App ex1Left ex1Right
 
 
 
