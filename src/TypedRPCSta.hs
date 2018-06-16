@@ -12,6 +12,25 @@ type ServerContext = [Context]   -- a stack of contexts
 
 type EitherSta = Either (StaTerm, ServerContext) (ClientContext, ServerContext, StaTerm)
 
+--
+eval :: StaTerm -> StaValue 
+eval m = repEvalClient m []
+
+repEvalClient :: StaTerm -> ServerContext -> StaTerm 
+repEvalClient m serverContext =
+    case evalClient m serverContext of
+        Left (v@(ST.Lam _ _ _), []) -> v
+        Left (v@(ST.Const _), []) -> v
+        Left (m', serverContext) -> repEvalClient m' serverContext
+        Right (clientCtx', serverCtx', m') -> repEvalServer clientCtx' serverCtx' m'
+
+repEvalServer :: ClientContext -> ServerContext -> StaTerm -> StaTerm 
+repEvalServer clientCtx serverCtx m = 
+    case evalServer clientCtx serverCtx m of
+        Left (m', serverCtx') -> repEvalClient m' serverCtx'
+        Right (clientCtx', serverCtx', m') -> repEvalServer clientCtx' serverCtx' m'
+
+--
 evalClient :: StaTerm -> ServerContext -> EitherSta
 evalClient (ST.Let y (ST.App v@(ST.Lam Client xs body) ws) m) serverCtx = 
     Left (ST.Let y (substs body xs ws) m, serverCtx)
