@@ -32,6 +32,12 @@
 --  evaluates to
 -- 1
 
+-- In Stateful RPC:
+-- let f1 = lam^s(f).let f4 = lam^s(x).x in let x5 = let f7 = f in let x8 = 1 in let r11 = Call(lam^c(z10).let y9 = (f7) (z10) in Ret(y9)) (x8) in r11 in let r6 = (f4) (x5) in r6 in let x2 = lam^c(y).let f12 = lam^s(z).z in let x13 = y in let r14 = Req(f12) (x13) in r14 in let r3 = Req(f1) (x2) in r3
+
+--  evaluates to
+-- 1
+
 module Main where
 
 import Term
@@ -43,6 +49,10 @@ import TypedRPC
 import EncTerm(prTerm)
 import TypedRPCEnc
 import CompEncTerm
+
+import StaTerm(prTerm)
+import TypedRPCSta
+import CompStaTerm 
 
 main :: IO ()
 main = do 
@@ -65,6 +75,17 @@ main = do
     putStrLn " evaluates to "
     let encv = TypedRPCEnc.eval encex1 
     putStrLn (EncTerm.prTerm encv)
+    putStrLn ""
+
+    putStrLn "In Stateful RPC: "
+    let staex1 = compStaTerm tyex1
+    putStrLn (StaTerm.prTerm staex1)
+    putStrLn ""
+
+    putStrLn " evaluates to "
+    let stav = TypedRPCSta.eval staex1 
+    putStrLn (StaTerm.prTerm stav)
+
 --
 ex1Left = Lam Server "f" 
         (App (Lam Server "x" (Var "x")) 
