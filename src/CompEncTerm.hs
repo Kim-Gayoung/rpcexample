@@ -55,30 +55,17 @@ type EncContTerm = EncTerm  -- continuation
 
 -- Compilation for Server
 compServer :: Int -> TypedTerm -> EncContTerm -> (Int, EncTerm)
-compServer i (TT.Const c) k = 
-    let rvar = "r" ++ show i 
-        r = ET.Var rvar 
-        j = i + 1
-    in  (j, ET.Let rvar (ET.App k [ET.Const c]) r)
-compServer i (TT.Var x) k = 
-    let rvar = "r" ++ show i 
-        r = ET.Var rvar 
-        j = i + 1
-    in  (j, ET.Let rvar (ET.App k [ET.Var x]) r)
+compServer i (TT.Const c) k = (i, ET.App k [ET.Const c])
+compServer i (TT.Var x) k = (i, ET.App k [ET.Var x])
 compServer i (TT.Lam Client x ty m) k = 
-    let rvar = "r" ++ show i 
-        r = ET.Var rvar 
-
-        (j, encm) = compClient (i + 1) m 
-    in  (j, ET.Let rvar (ET.App k [ET.Lam Client [x] encm]) r)
+    let (j, encm) = compClient i m 
+    in  (j, ET.App k [ET.Lam Client [x] encm])
 compServer i (TT.Lam Server x ty m) k = 
-    let rvar = "r" ++ show i 
-        contkvar = "k" ++ show (i + 1) 
-        r = ET.Var rvar
+    let contkvar = "k" ++ show i 
         contk = ET.Var contkvar 
 
-        (j, encm) = compServer (i + 3) m contk 
-    in  (j, ET.Let rvar (ET.App k [ET.Lam Server [x,contkvar] encm]) r)
+        (j, encm) = compServer (i + 1) m contk 
+    in  (j, ET.App k [ET.Lam Server [x,contkvar] encm])
 compServer i (TT.App (TT.LocType Client) fn arg) k = 
     let fvar = "f" ++ show i
         xvar = "x" ++ show (i + 1) 
@@ -103,15 +90,13 @@ compServer i (TT.App (TT.LocType Client) fn arg) k =
 compServer i (TT.App (TT.LocType Server) fn arg) k = 
     let fvar = "f" ++ show i
         xvar = "x" ++ show (i + 1) 
-        rvar = "r" ++ show (i + 2)  
 
         f = ET.Var fvar 
         x = ET.Var xvar 
-        r = ET.Var rvar
 
         argcont = ET.Lam Server [xvar] 
-                    (ET.Let rvar (ET.App f [x,k]) r)
-        (j, encarg) = compServer (i + 3) arg argcont 
+                    (ET.App f [x,k])
+        (j, encarg) = compServer (i + 2) arg argcont 
 
         fncont = ET.Lam Server [fvar] encarg 
     in  compServer j fn fncont 
