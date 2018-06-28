@@ -1,12 +1,12 @@
-module CompEncTerm where
+module CompRPCEncTerm where
 
 import Term(Location(..))
 import TypedTerm as TT 
-import EncTerm as ET 
+import RPCEncTerm as ET 
 
 -- Compilation for Client
-compEncTerm :: TypedTerm -> EncTerm
-compEncTerm tt = snd (compClient 1 tt)
+compRPCEncTerm :: TypedTerm -> EncTerm
+compRPCEncTerm tt = snd (compClient 1 tt)
 
 compClient :: Int -> TypedTerm -> (Int, EncTerm) 
 compClient i (TT.Const c) = (i, ET.Const c)

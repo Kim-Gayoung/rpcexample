@@ -2,7 +2,7 @@ module TypedRPCEnc where
 
 import Term(Location(..))
 import TypedTerm as TT 
-import EncTerm as ET 
+import RPCEncTerm as ET 
 
 --
 eval :: EncTerm -> EncValue 
