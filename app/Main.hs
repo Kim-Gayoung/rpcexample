@@ -46,13 +46,17 @@ import RPC
 import TypedTerm(prTyTerm)
 import TypedRPC
 
-import EncTerm(prTerm)
+import RPCEncTerm(prTerm)
 import TypedRPCEnc
-import CompEncTerm
+import CompRPCEncTerm
 
-import StaTerm(prTerm)
+import RPCStaTerm(prTerm)
 import TypedRPCSta
-import CompStaTerm 
+import CompRPCStaTerm
+
+import CSStaTerm(prTerm)
+import TypedCSSta
+import CompCSStaTerm
 
 main :: IO ()
 main = do 
@@ -68,23 +72,32 @@ main = do
     putStrLn ""
 
     putStrLn "In State-encoding RPC: "
-    let encex1 = compEncTerm tyex1
-    putStrLn (EncTerm.prTerm encex1)
+    let encex1 = compRPCEncTerm tyex1
+    putStrLn (RPCEncTerm.prTerm encex1)
     putStrLn ""
 
     putStrLn " evaluates to "
     let encv = TypedRPCEnc.eval encex1 
-    putStrLn (EncTerm.prTerm encv)
+    putStrLn (RPCEncTerm.prTerm encv)
     putStrLn ""
 
     putStrLn "In Stateful RPC: "
-    let staex1 = compStaTerm tyex1
-    putStrLn (StaTerm.prTerm staex1)
+    let staex1 = compRPCStaTerm tyex1
+    putStrLn (RPCStaTerm.prTerm staex1)
     putStrLn ""
 
     putStrLn " evaluates to "
     let stav = TypedRPCSta.eval staex1 
-    putStrLn (StaTerm.prTerm stav)
+    putStrLn (RPCStaTerm.prTerm stav)
+
+    putStrLn "In Stateful CS: "
+    let (csstaex1, fs_c, fs_s) = compCSStaTerm staex1
+    putStrLn (CSStaTerm.prTerm csstaex1)
+    putStrLn ""
+
+    putStrLn " evaluates to "
+    let csstav = TypedCSSta.eval fs_c fs_s csstaex1 
+    putStrLn (CSStaTerm.prTerm csstav)
 
 --
 ex1Left = Lam Server "f" 

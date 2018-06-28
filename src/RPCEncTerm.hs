@@ -1,4 +1,4 @@
-module EncTerm(EncTerm(..), EncValue, subst, substs, prTerm) where
+module RPCEncTerm(EncTerm(..), EncValue, subst, substs, prTerm) where
 
 
 import Term(Location(..),locToStr,seqToStr)

@@ -1,30 +1,35 @@
-module StaTerm(StaTerm(..), StaValue, subst, substs, prTerm) where
-
+module CSStaTerm(StaTerm(..), StaValue, subst, substs, prTerm, FunStore, ClosedFun) where
 
 import Term(Location(..),locToStr,seqToStr)
 
 --
-type StaValue = StaTerm -- Var x, Lam a xs m, Const i
+type StaValue = StaTerm -- Var x, Clo f vs, Const i
 
 data StaTerm = 
-        Const Int
+      Const Int
     | Var String
-    | Lam Location [String] StaTerm 
+    | Clo String [StaValue]
     | Call StaValue  [StaValue]
     | Ret StaValue    -- New in StaTerm, not in EncTerm
     | Req StaValue [StaValue]
     | App StaValue [StaValue]
     | Let String StaTerm StaTerm 
 
+-- z1..zk lam^a (x1..xn).m
+type ClosedFun = ([String], Location, [String], StaTerm) -- No Clo f vs in StaTerm
+type FunStore = [(String, ClosedFun)]
+
 --
 subst :: StaTerm -> String -> StaValue -> StaTerm 
 subst m@(Const i) x v = m
 subst m@(Var y) x v = if x == y then v else m
-subst m@(Lam loc xs mbody) x v = 
-    let isin [] = False
-        isin (y:ys) = x==y || isin ys 
-    in  if isin xs then Lam loc xs mbody
-        else Lam loc xs (subst mbody x v) 
+subst m@(Clo f vs) x v = Clo f (map (\w -> subst w x v) vs)
+--    error ("subst on Clo: " ++ prTerm m ++ " " ++ x ++ " " ++ prTerm v)
+-- subst m@(Lam loc xs mbody) x v = 
+--     let isin [] = False
+--         isin (y:ys) = x==y || isin ys 
+--     in  if isin xs then Lam loc xs mbody
+--         else Lam loc xs (subst mbody x v) 
 subst m@(Call f ws) x v = Call (subst f x v) (map (\w -> subst w x v) ws)
 subst m@(Ret w) x v = Ret (subst w x v)
 subst m@(App f ws) x v = App (subst f x v) (map (\w -> subst w x v) ws) 
@@ -42,8 +47,10 @@ substs m _ _ = error ("Error in substs: the lengths of vars and vals are differe
 prTerm :: StaTerm -> String 
 prTerm (Const i) = show i 
 prTerm (Var x) = x
-prTerm (Lam loc xs m) = 
-    "lam^" ++ locToStr loc ++ "(" ++ seqToStr xs ++ ")." ++ prTerm m
+prTerm (Clo f vs) =
+    "Clo(" ++ f ++ ", " ++ seqToStr (map prTerm vs) ++ ")"
+-- prTerm (Lam loc xs m) = 
+--     "lam^" ++ locToStr loc ++ "(" ++ seqToStr xs ++ ")." ++ prTerm m
 prTerm (App f ws) = 
     "(" ++ prTerm f ++ ") (" ++ seqToStr (map prTerm ws) ++ ")"
 prTerm (Call f ws) = 
@@ -54,6 +61,6 @@ prTerm (Req f ws) =
     "Req(" ++ prTerm f ++ ") (" ++ seqToStr (map prTerm ws) ++ ")"
 prTerm (Let x m1 m2) = 
     "let " ++ x ++ " = " ++ prTerm m1 ++ " in " ++ prTerm m2 
-
     
-    
+        
+        

@@ -3,7 +3,7 @@ module TypedRPCSta where
 
 import Term(Location(..))
 import TypedTerm as TT 
-import StaTerm as ST 
+import RPCStaTerm as ST 
 
 --
 data Context = Ctx String StaTerm

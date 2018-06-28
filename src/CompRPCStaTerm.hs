@@ -1,12 +1,12 @@
-module CompStaTerm where
+module CompRPCStaTerm where
 
 import Term(Location(..))
 import TypedTerm as TT 
-import StaTerm as ST 
+import RPCStaTerm as ST 
 
 -- Compilation for Client
-compStaTerm :: TypedTerm -> StaTerm
-compStaTerm tt = snd (compClient 1 tt)
+compRPCStaTerm :: TypedTerm -> StaTerm
+compRPCStaTerm tt = snd (compClient 1 tt)
 
 compClient :: Int -> TypedTerm -> (Int, StaTerm) 
 compClient i (TT.Const c) = (i, ST.Const c)
