@@ -3,6 +3,7 @@ module TypedCSSta where
 import Term(Location(..))
 import TypedTerm as TT 
 import CSStaTerm as ST 
+import Data.List
 
 --
 data Context = Ctx String StaTerm
@@ -13,32 +14,32 @@ type EitherSta = Either (StaTerm, ServerContext) (ClientContext, ServerContext, 
 
 lookup :: FunStore -> String -> ClosedFun
 lookup fs f =
-    case Data.List.lookup fs f of
+    case Data.List.lookup f fs of
         Just closedFun -> closedFun
-        Nothing -> error ("lookup: not found " ++ f ++ "\n" ++ show fs)
+        Nothing -> error ("lookup: not found " ++ f ++ "\n")
 
 --
-eval :: StaTerm -> StaValue 
-eval m = repEvalClient m []
+eval :: FunStore -> FunStore -> StaTerm -> StaValue 
+eval fs_c fs_s m = repEvalClient fs_c fs_s m []
 
-repEvalClient :: StaTerm -> ServerContext -> StaTerm 
-repEvalClient m serverContext =
-    case evalClient m serverContext of
-        Left (v@(ST.Lam _ _ _), []) -> v
+repEvalClient :: FunStore -> FunStore -> StaTerm -> ServerContext -> StaTerm 
+repEvalClient fs_c fs_s m serverContext =
+    case evalClient fs_c m serverContext of
+        Left (v@(ST.Clo _ _), []) -> v
         Left (v@(ST.Const _), []) -> v
-        Left (m', serverContext) -> repEvalClient m' serverContext
-        Right (clientCtx', serverCtx', m') -> repEvalServer clientCtx' serverCtx' m'
+        Left (m', serverContext) -> repEvalClient fs_c fs_s m' serverContext
+        Right (clientCtx', serverCtx', m') -> repEvalServer fs_c fs_s clientCtx' serverCtx' m'
 
-repEvalServer :: ClientContext -> ServerContext -> StaTerm -> StaTerm 
-repEvalServer clientCtx serverCtx m = 
-    case evalServer clientCtx serverCtx m of
-        Left (m', serverCtx') -> repEvalClient m' serverCtx'
-        Right (clientCtx', serverCtx', m') -> repEvalServer clientCtx' serverCtx' m'
+repEvalServer :: FunStore -> FunStore -> ClientContext -> ServerContext -> StaTerm -> StaTerm 
+repEvalServer fs_c fs_s clientCtx serverCtx m = 
+    case evalServer fs_s clientCtx serverCtx m of
+        Left (m', serverCtx') -> repEvalClient fs_c fs_s m' serverCtx'
+        Right (clientCtx', serverCtx', m') -> repEvalServer fs_c fs_s clientCtx' serverCtx' m'
 
 --
 evalClient :: FunStore -> StaTerm -> ServerContext -> EitherSta
 evalClient phi (ST.Let y (ST.App v@(ST.Clo f vs) ws) m) serverCtx =
-    let (zs, a, xs, m0) = lookup phi f
+    let (zs, a, xs, m0) = TypedCSSta.lookup phi f
     in Left (ST.Let y (substs (substs m0 zs vs) xs ws) m, serverCtx)
                         -- substs m0 (zs ++ xs) (vs ++ ws)
 evalClient phi (ST.Let x (ST.Req v@(ST.Clo f vs) ws) m) serverCtx =
@@ -55,15 +56,16 @@ evalClient phi m serverCtx =
     error ("evalClient: " ++ prTerm m)
 
 evalServer :: FunStore -> ClientContext -> ServerContext -> StaTerm -> EitherSta 
-evalServer phi clientCtx serverCtx (ST.Let y (ST.App v@(ST.Lam Server xs body) ws) m) = 
-    Right (clientCtx, serverCtx, ST.Let y (substs body xs ws) m)
-evalServer phi (Ctx y m2) serverCtx (ST.Let x (ST.Call v@(ST.Lam Client xs body) ws) m1) =
+evalServer phi clientCtx serverCtx (ST.Let y (ST.App v@(ST.Clo f vs) ws) m) = 
+    let (zs, a, xs, m0) = TypedCSSta.lookup phi f
+    in Right (clientCtx, serverCtx, ST.Let y (substs (substs m0 zs vs) xs ws) m)
+evalServer phi (Ctx y m2) serverCtx (ST.Let x (ST.Call v@(ST.Clo f vs) ws) m1) =
     Left (ST.Let y (ST.App v ws) m2, Ctx x m1 : serverCtx)
 evalServer phi (Ctx x m) serverCtx v@(ST.Clo _ _) = 
     Left (ST.Let x v m, serverCtx)
 evalServer phi (Ctx x m) serverCtx v@(ST.Const _) = 
     Left (ST.Let x v m, serverCtx)
-evalServer phi clientCtx serverCtx (ST.Let x v@(ST.Lam _ _ _) m) =
+evalServer phi clientCtx serverCtx (ST.Let x v@(ST.Clo _ _) m) =
     Right (clientCtx, serverCtx, ST.subst m x v)
 evalServer phi clientCtx serverCtx (ST.Let x v@(ST.Const _) m) =
     Right (clientCtx, serverCtx, ST.subst m x v)

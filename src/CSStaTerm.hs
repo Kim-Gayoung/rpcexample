@@ -1,4 +1,4 @@
-module CSStaTerm(StaTerm(..), StaValue, subst, substs, prTerm) where
+module CSStaTerm(StaTerm(..), StaValue, subst, substs, prTerm, FunStore, ClosedFun) where
 
 import Term(Location(..),locToStr,seqToStr)
 
@@ -23,8 +23,8 @@ type FunStore = [(String, ClosedFun)]
 subst :: StaTerm -> String -> StaValue -> StaTerm 
 subst m@(Const i) x v = m
 subst m@(Var y) x v = if x == y then v else m
-subst m@(Clo f vs) x v =
-    error ("subst on Clo: " ++ prTerm m ++ " " ++ x ++ " " ++ prTerm v)
+subst m@(Clo f vs) x v = Clo f (map (\w -> subst w x v) vs)
+--    error ("subst on Clo: " ++ prTerm m ++ " " ++ x ++ " " ++ prTerm v)
 -- subst m@(Lam loc xs mbody) x v = 
 --     let isin [] = False
 --         isin (y:ys) = x==y || isin ys 

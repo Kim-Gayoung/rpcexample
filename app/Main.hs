@@ -52,7 +52,11 @@ import CompRPCEncTerm
 
 import RPCStaTerm(prTerm)
 import TypedRPCSta
-import CompRPCStaTerm 
+import CompRPCStaTerm
+
+import CSStaTerm(prTerm)
+import TypedCSSta
+import CompCSStaTerm
 
 main :: IO ()
 main = do 
@@ -85,6 +89,15 @@ main = do
     putStrLn " evaluates to "
     let stav = TypedRPCSta.eval staex1 
     putStrLn (RPCStaTerm.prTerm stav)
+
+    putStrLn "In Stateful CS: "
+    let (csstaex1, fs_c, fs_s) = compCSStaTerm staex1
+    putStrLn (CSStaTerm.prTerm csstaex1)
+    putStrLn ""
+
+    putStrLn " evaluates to "
+    let csstav = TypedCSSta.eval fs_c fs_s csstaex1 
+    putStrLn (CSStaTerm.prTerm csstav)
 
 --
 ex1Left = Lam Server "f" 
