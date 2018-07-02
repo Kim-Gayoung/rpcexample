@@ -58,6 +58,10 @@ import CSStaTerm(prTerm)
 import TypedCSSta
 import CompCSStaTerm
 
+import CSEncTerm(prTerm)
+import TypedCSEnc
+import CompCSEncTerm
+
 main :: IO ()
 main = do 
     putStrLn "In RPC: "
@@ -98,6 +102,15 @@ main = do
     putStrLn " evaluates to "
     let csstav = TypedCSSta.eval fs_c fs_s csstaex1 
     putStrLn (CSStaTerm.prTerm csstav)
+
+    putStrLn "In Encoding CS: "
+    let (csencex1, efs_c, efs_s) = compCSEncTerm encex1
+    putStrLn (CSEncTerm.prTerm csencex1)
+    putStrLn ""
+
+    putStrLn " evaluates to "
+    let csencv = TypedCSEnc.eval efs_c efs_s csencex1 
+    putStrLn (CSEncTerm.prTerm csencv)
 
 --
 ex1Left = Lam Server "f" 
