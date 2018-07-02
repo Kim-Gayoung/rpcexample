@@ -1,4 +1,4 @@
-module CSEncTerm(EncTerm(..), EncValue, subst, substs, prTerm, FunStore, ClosedFun) where
+module CSEncTerm(EncTerm(..), EncValue, subst, substs, prTerm, prFClosedFun, FunStore, ClosedFun) where
 
 import Term(Location(..), locToStr, seqToStr)
 
@@ -17,6 +17,11 @@ data EncTerm =
 --
 type ClosedFun = ([String], Location, [String], EncTerm)
 type FunStore = [(String, ClosedFun)]
+
+prFClosedFun (f, closedFun@(zs, loc, xs, m)) =
+    f ++ " = {" ++ seqToStr zs ++ "} "
+        ++ "lam^" ++ locToStr loc ++ "("++ seqToStr xs ++ ")."
+        ++ prTerm m
 
 --
 subst :: EncTerm -> String -> EncValue -> EncTerm
