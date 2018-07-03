@@ -54,9 +54,13 @@ import RPCStaTerm(prTerm)
 import TypedRPCSta
 import CompRPCStaTerm
 
-import CSStaTerm(prTerm)
+import CSStaTerm(prTerm, prFClosedFun)
 import TypedCSSta
 import CompCSStaTerm
+
+import CSEncTerm(prTerm, prFClosedFun)
+import TypedCSEnc
+import CompCSEncTerm
 
 main :: IO ()
 main = do 
@@ -84,20 +88,43 @@ main = do
     putStrLn "In Stateful RPC: "
     let staex1 = compRPCStaTerm tyex1
     putStrLn (RPCStaTerm.prTerm staex1)
-    putStrLn ""
 
     putStrLn " evaluates to "
     let stav = TypedRPCSta.eval staex1 
     putStrLn (RPCStaTerm.prTerm stav)
+    putStrLn ""
 
     putStrLn "In Stateful CS: "
     let (csstaex1, fs_c, fs_s) = compCSStaTerm staex1
-    putStrLn (CSStaTerm.prTerm csstaex1)
+    putStrLn "client function store: "
+    mapM_ (putStrLn . CSStaTerm.prFClosedFun) fs_c
+    putStrLn ""
+    putStrLn "server function store: "
+    mapM_ (putStrLn . CSStaTerm.prFClosedFun) fs_s
     putStrLn ""
 
+    putStrLn "main client expression: "
+    putStrLn (CSStaTerm.prTerm csstaex1)
     putStrLn " evaluates to "
     let csstav = TypedCSSta.eval fs_c fs_s csstaex1 
     putStrLn (CSStaTerm.prTerm csstav)
+    putStrLn ""
+
+    putStrLn "In Encoding CS: "
+    let (csencex1, fs_c, fs_s) = compCSEncTerm encex1
+    putStrLn "client function store: "
+    mapM_ (putStrLn . CSEncTerm.prFClosedFun) fs_c
+    putStrLn ""
+    putStrLn "server function store: "
+    mapM_ (putStrLn . CSEncTerm.prFClosedFun) fs_s
+    putStrLn ""
+
+    putStrLn "main client expression: "
+    putStrLn (CSEncTerm.prTerm csencex1)
+    putStrLn " evaluates to "
+    let csencv = TypedCSEnc.eval fs_c fs_s csencex1
+    putStrLn (CSEncTerm.prTerm csencv)
+    putStrLn ""
 
 --
 ex1Left = Lam Server "f" 

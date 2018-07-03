@@ -1,4 +1,4 @@
-module CSStaTerm(StaTerm(..), StaValue, subst, substs, prTerm, FunStore, ClosedFun) where
+module CSStaTerm(StaTerm(..), StaValue, subst, substs, prTerm, prFClosedFun, FunStore, ClosedFun) where
 
 import Term(Location(..),locToStr,seqToStr)
 
@@ -18,6 +18,11 @@ data StaTerm =
 -- z1..zk lam^a (x1..xn).m
 type ClosedFun = ([String], Location, [String], StaTerm) -- No Clo f vs in StaTerm
 type FunStore = [(String, ClosedFun)]
+
+prFClosedFun (f, closedFun@(zs, loc, xs, m)) =
+    f ++ " = {" ++ seqToStr zs ++ "} "
+        ++ "lam^" ++ locToStr loc ++ "("++ seqToStr xs ++ ")."
+        ++ prTerm m
 
 --
 subst :: StaTerm -> String -> StaValue -> StaTerm 
