@@ -14,11 +14,12 @@ comp i (RT.Const c) zs = (i, CT.Const c, [], [])
 comp i (RT.Var x) zs = (i, CT.Var x, [], []) 
 comp i (RT.Lam loc xs m) zs =
     let (j, m', fs_c, fs_s) = comp i m (zs ++ xs)
-        closedFun = (zs, loc, xs, m')
+        closedFun = (fvs, loc, xs, m')
         f = "f" ++ show j
         fs_c' = if loc == Client then fs_c ++ [(f, closedFun)] else fs_c
         fs_s' = if loc == Server then fs_s ++ [(f, closedFun)] else fs_s
-    in  (j+1, CT.Clo f (map CT.Var zs), fs_c', fs_s')
+        fvs = fv (RT.Lam loc xs m)
+    in  (j+1, CT.Clo f (map CT.Var fvs), fs_c', fs_s')
 comp i (RT.App fn args) zs = 
     let (j1, csfn, fs_c, fs_s) = comp i fn zs
         (j2, csargs, fs_cs, fs_ss) = compList j1 args zs

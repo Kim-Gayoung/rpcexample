@@ -1,6 +1,6 @@
-module RPCStaTerm(StaTerm(..), StaValue, subst, substs, prTerm) where
+module RPCStaTerm(StaTerm(..), StaValue, subst, substs, fv, prTerm) where
 
-
+import Data.List
 import Term(Location(..),locToStr,seqToStr)
 
 --
@@ -37,6 +37,17 @@ substs :: StaTerm -> [String] -> [StaValue] -> StaTerm
 substs m [] [] = m 
 substs m (x:xs) (v:vs) = substs (subst m x v) xs vs 
 substs m _ _ = error ("Error in substs: the lengths of vars and vals are different")
+
+--
+fv :: StaTerm -> [String]
+fv m@(Const i) = []
+fv m@(Var y) = [y]
+fv m@(Lam loc xs mbody) = nub (fv mbody) \\ xs
+fv m@(Call f ws) = nub (concat (map fv (f:ws)))
+fv m@(Ret v) = fv v
+fv m@(Req f ws) = nub (concat (map fv (f:ws)))
+fv m@(App f ws) = nub (concat (map fv (f:ws)))
+fv m@(Let x m1 m2) = nub (fv m1 `union` (nub (fv m2) \\ [x]))
 
 --
 prTerm :: StaTerm -> String 

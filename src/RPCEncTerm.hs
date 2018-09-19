@@ -1,5 +1,6 @@
-module RPCEncTerm(EncTerm(..), EncValue, subst, substs, prTerm) where
+module RPCEncTerm(EncTerm(..), EncValue, subst, substs, fv, prTerm) where
 
+import Data.List
 
 import Term(Location(..),locToStr,seqToStr)
 
@@ -37,6 +38,16 @@ substs :: EncTerm -> [String] -> [EncValue] -> EncTerm
 substs m [] [] = m 
 substs m (x:xs) (v:vs) = substs (subst m x v) xs vs 
 substs m _ _ = error ("Error in substs: the lengths of vars and vals are different")
+
+--
+fv :: EncTerm -> [String]
+fv m@(Const i) = []
+fv m@(Var y) = [y]
+fv m@(Lam loc xs mbody) = nub (fv mbody) \\ xs
+fv m@(Call f ws) = nub (concat (map fv (f:ws)))
+fv m@(Req f ws) = nub (concat (map fv (f:ws)))
+fv m@(App f ws) = nub (concat (map fv (f:ws)))
+fv m@(Let x m1 m2) = nub (fv m1 `union` (nub (fv m2) \\ [x]))
 
 --
 prTerm :: EncTerm -> String 
