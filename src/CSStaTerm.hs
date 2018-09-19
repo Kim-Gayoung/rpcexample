@@ -53,7 +53,7 @@ prTerm :: StaTerm -> String
 prTerm (Const i) = show i 
 prTerm (Var x) = x
 prTerm (Clo f vs) =
-    "Clo(" ++ f ++ ", " ++ seqToStr (map prTerm vs) ++ ")"
+    "Clo(" ++ f ++ ", {" ++ seqToStr (map prTerm vs) ++ "})"
 -- prTerm (Lam loc xs m) = 
 --     "lam^" ++ locToStr loc ++ "(" ++ seqToStr xs ++ ")." ++ prTerm m
 prTerm (App f ws) = 
