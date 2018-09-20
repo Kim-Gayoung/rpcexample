@@ -15,7 +15,7 @@ comp i (RT.Var x) zs = (i, CT.Var x, [], [])
 comp i (RT.Lam loc xs m) zs = 
     let (j, m', fs_c, fs_s) = comp i m (zs ++ xs)
         closedFun = (fvs, loc, xs, m')
-        f = "f" ++ show j
+        f = "_gf" ++ show j
         fs_c' = if loc == Client then fs_c ++ [(f, closedFun)] else fs_c
         fs_s' = if loc == Server then fs_s ++ [(f, closedFun)] else fs_s
         fvs = fv (RT.Lam loc xs m)  -- replace zs with fvs
